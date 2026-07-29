@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LA CALLE 2 - Generador de Presupuestos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Gobold & Montserrat Fonts -->
+    <link href="https://fonts.cdnfonts.com/css/gobold" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Oswald:wght@500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        @layer utilities {
+            .font-gobold {
+                font-family: 'Gobold', 'Oswald', 'Montserrat', sans-serif;
+                letter-spacing: 0.05em;
+                font-weight: 700;
+            }
+            .font-body {
+                font-family: 'Montserrat', sans-serif;
+            }
+        }
+
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e4e4e7;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #71717a;
+            border-radius: 0px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+
+        /* PDF A4 Sheet Dimensions - Fixed 794x1123 px for exact 1:1 rendering */
+        .pdf-page {
+            width: 794px;
+            min-width: 794px;
+            max-width: 794px;
+            height: 1123px;
+            min-height: 1123px;
+            max-height: 1123px;
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            padding: 44px 48px;
+            box-sizing: border-box;
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 0 0 1px #27272a, 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .custom-checkbox {
+            accent-color: #000000;
+            width: 1.1rem;
+            height: 1.1rem;
+            cursor: pointer;
+            border-radius: 0px;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0);
+            cursor: pointer;
+        }
+
+        .modal-drawer {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Print setup for native export */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            main {
+                display: block !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            #pdfContent {
+                gap: 0 !important;
+                max-width: 100% !important;
+            }
+            .pdf-page {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-zinc-200 text-zinc-900 font-body min-h-screen flex flex-col antialiased">
+
+    <!-- LANDING / BRANCH SELECTION SCREEN -->
+    <div id="landingScreen" class="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-6 text-white select-none">
+        <div class="max-w-2xl w-full text-center space-y-10">
+            
+            <div class="space-y-3">
+                <div class="w-16 h-16 border-2 border-white rounded-full flex items-center justify-center font-gobold text-3xl mx-auto bg-transparent text-white">
+                    I
+                </div>
+                <h1 class="font-gobold text-4xl sm:text-5xl tracking-wider text-white">SELECCIONAR SUCURSAL</h1>
+                <p class="text-xs text-zinc-400 font-body uppercase tracking-widest">Elegí la sucursal para armar presupuestos</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
+                
+                <!-- OPTION 1: LA CALLE 1 (DISABLED) -->
+                <div class="group border border-zinc-800 bg-zinc-950 p-8 flex flex-col items-center justify-center space-y-4 opacity-50 cursor-not-allowed transform hover:scale-105 transition-all duration-300 relative overflow-hidden">
+                    <div class="w-12 h-12 border border-zinc-600 rounded-full flex items-center justify-center font-gobold text-xl text-zinc-500">
+                        I
+                    </div>
+                    <div>
+                        <h2 class="font-gobold text-2xl text-zinc-400 tracking-wider">LA CALLE</h2>
+                        <span class="text-[10px] font-mono uppercase bg-zinc-900 text-zinc-500 px-2 py-0.5 mt-2 inline-block border border-zinc-800">Próximamente</span>
+                    </div>
+                </div>
+
+                <!-- OPTION 2: LA CALLE 2 (ACTIVE) -->
+                <div onclick="openPasswordModal()" class="group border-2 border-zinc-700 bg-zinc-900 hover:border-white hover:bg-black p-8 flex flex-col items-center justify-center space-y-4 cursor-pointer transform hover:scale-105 transition-all duration-300 shadow-2xl">
+                    <div class="w-12 h-12 border-2 border-white rounded-full flex items-center justify-center font-gobold text-xl text-white group-hover:bg-white group-hover:text-black transition">
+                        I
+                    </div>
+                    <div>
+                        <h2 class="font-gobold text-2xl text-white tracking-wider group-hover:text-white">LA CALLE <span class="text-white">2</span></h2>
+                        <span class="text-[10px] font-mono uppercase bg-white text-black px-2.5 py-0.5 mt-2 inline-block font-bold">Ingresar</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="pt-6 border-t border-zinc-900 text-[10px] text-zinc-600 font-mono uppercase tracking-widest">
+                GURRUCHAGA 732, VILLA CRESPO • BUENOS AIRES
+            </div>
+        </div>
+    </div>
+
+    <!-- FRIENDLY PASSWORD MODAL FOR LA CALLE 2 -->
+    <div id="passwordModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-zinc-900 border border-zinc-700 p-8 max-w-sm w-full space-y-6 text-center shadow-2xl rounded-none text-white">
+            <div class="w-14 h-14 border-2 border-white rounded-full flex items-center justify-center font-gobold text-2xl text-white mx-auto">
+                I
+            </div>
+            
+            <div class="space-y-1">
+                <h3 class="font-gobold text-2xl text-white uppercase tracking-wider">LA CALLE 2</h3>
+                <p class="text-xs text-zinc-300 font-body">Ingresá la contraseña para continuar:</p>
+            </div>
+            
+            <div class="space-y-4 pt-2">
+                <div>
+                    <label class="block text-[10px] uppercase font-mono text-zinc-400 text-left mb-1 font-bold">Contraseña</label>
+                    <input type="password" id="inputPassword" placeholder="Escribí tu contraseña" onkeypress="if(event.key==='Enter') verifyPassword()" class="w-full bg-black border border-zinc-600 px-4 py-2.5 text-white text-center font-mono font-medium focus:outline-none focus:border-white text-sm placeholder-zinc-500">
+                </div>
+                
+                <p id="passwordError" class="text-xs text-red-400 font-semibold hidden flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-circle-exclamation"></i> Contraseña incorrecta.
+                </p>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closePasswordModal()" class="w-1/2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-2.5 px-3 text-xs uppercase tracking-wider transition">Cancelar</button>
+                    <button onclick="verifyPassword()" class="w-1/2 bg-white hover:bg-zinc-200 text-black font-bold py-2.5 px-3 text-xs uppercase tracking-wider transition">Entrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APP HEADER -->
+    <header class="no-print bg-zinc-900 border-b border-zinc-800 text-white sticky top-0 z-40 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button onclick="returnToLanding()" title="Cambiar de Sucursal" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-2 border border-zinc-600 flex items-center gap-1.5 uppercase tracking-wider font-semibold mr-2 transition">
+                    <i class="fa-solid fa-chevron-left text-xs"></i> SUCURSALES
+                </button>
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 border-2 border-white rounded-full flex items-center justify-center font-gobold text-lg tracking-tighter bg-transparent text-white">
+                        I
+                    </div>
+                    <span class="font-gobold text-2xl tracking-wider text-white">LA CALLE <span class="text-white">2</span></span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="window.print()" class="text-xs bg-white hover:bg-zinc-200 text-black px-4 py-2 rounded-none transition font-bold uppercase tracking-wider flex items-center gap-1.5 shadow">
+                    <i class="fa-solid fa-print text-black"></i> EXPORTAR
+                </button>
+                <button onclick="toggleDatabaseModal(true)" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-100 px-4 py-2 rounded-none transition border border-zinc-600 flex items-center gap-1.5 uppercase tracking-wider font-semibold">
+                    <i class="fa-solid fa-database text-zinc-400"></i> BASE DE DATOS
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- EDITOR PANEL (LEFT COLUMN) -->
+        <section class="no-print lg:col-span-5 space-y-6">
+            <div class="bg-white border border-zinc-300 rounded-none p-5 sm:p-6 shadow-xl space-y-6 text-zinc-900">
+                
+                <div class="flex items-center justify-between border-b border-zinc-300 pb-4">
+                    <h2 class="font-gobold text-xl tracking-wide text-zinc-900 flex items-center gap-2 uppercase">
+                        <i class="fa-solid fa-sliders text-zinc-600 text-sm"></i> OPCIONES DEL PRESUPUESTO
+                    </h2>
+                    <span class="text-[10px] text-zinc-500 font-mono uppercase font-bold">Panel de Edición</span>
+                </div>
+
+                <!-- 1. CLIENT & EVENT DETAILS -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 1. Datos Generales del Evento
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="text-zinc-700 mb-1 block font-semibold">Nombre del Cliente</label>
+                            <input type="text" id="inputClientName" value="Juan Pérez" oninput="updatePreview()" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-medium focus:outline-none focus:border-black">
+                        </div>
+                        <div>
+                            <label class="text-zinc-700 mb-1 block font-semibold">Cantidad Pax (Invitados)</label>
+                            <input type="text" id="inputPax" value="80 personas" oninput="updatePreview()" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-medium focus:outline-none focus:border-black">
+                        </div>
+                        <div>
+                            <label class="text-zinc-700 mb-1 block font-semibold">Fecha del Evento</label>
+                            <input type="date" id="inputDate" value="2026-10-15" onclick="this.showPicker && this.showPicker()" onchange="updatePreview()" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-medium focus:outline-none focus:border-black cursor-pointer">
+                        </div>
+                        <div>
+                            <label class="text-zinc-700 mb-1 block font-semibold">Modalidad</label>
+                            <select id="inputModalidad" onchange="updatePreview()" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-medium focus:outline-none focus:border-black">
+                                <option value="Evento exclusivo">Evento exclusivo</option>
+                                <option value="Evento semiexclusivo">Evento semiexclusivo</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-zinc-600 mb-1 block text-[11px] uppercase font-mono font-bold">Dirección Fija (No modificable)</label>
+                            <input type="text" value="Gurruchaga 732, Villa Crespo" disabled class="w-full bg-zinc-200 border border-zinc-300 rounded-none px-3 py-2 text-zinc-600 cursor-not-allowed font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. SALONES SELECTION -->
+                <div class="space-y-3 pt-3 border-t border-zinc-300">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 2. Seleccionar Salón / Espacios
+                    </label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center p-2.5 bg-zinc-50 border border-zinc-300 hover:border-zinc-600 cursor-pointer transition">
+                            <input type="checkbox" onchange="updatePreview()" value="salon_azul" class="custom-checkbox salon-checkbox" checked>
+                            <span class="ml-2.5 text-zinc-900 font-semibold">Salón Azul</span>
+                        </label>
+                        <label class="flex items-center p-2.5 bg-zinc-50 border border-zinc-300 hover:border-zinc-600 cursor-pointer transition">
+                            <input type="checkbox" onchange="updatePreview()" value="salon_verde" class="custom-checkbox salon-checkbox">
+                            <span class="ml-2.5 text-zinc-900 font-semibold">Salón Verde</span>
+                        </label>
+                        <label class="flex items-center p-2.5 bg-zinc-50 border border-zinc-300 hover:border-zinc-600 cursor-pointer transition">
+                            <input type="checkbox" onchange="updatePreview()" value="salon_negro" class="custom-checkbox salon-checkbox">
+                            <span class="ml-2.5 text-zinc-900 font-semibold">Salón Negro</span>
+                        </label>
+                        <label class="flex items-center p-2.5 bg-zinc-50 border border-zinc-300 hover:border-zinc-600 cursor-pointer transition">
+                            <input type="checkbox" onchange="updatePreview()" value="salon_gris" class="custom-checkbox salon-checkbox">
+                            <span class="ml-2.5 text-zinc-900 font-semibold">Salón Gris</span>
+                        </label>
+                        <label class="flex items-center p-2.5 bg-zinc-50 border border-zinc-300 hover:border-zinc-600 cursor-pointer transition col-span-2">
+                            <input type="checkbox" onchange="updatePreview()" value="patio" class="custom-checkbox salon-checkbox">
+                            <span class="ml-2.5 text-zinc-900 font-semibold">Patio</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. INCLUDED SERVICES -->
+                <div class="space-y-3 pt-3 border-t border-zinc-300">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 3. Servicios Incluidos en la Propuesta
+                    </label>
+                    <div class="space-y-2 text-xs">
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Alquiler del espacio exclusivo</span>
+                            <input type="checkbox" id="incAlquiler" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Servicio de bandejeo de finger food</span>
+                            <input type="checkbox" id="incFinger" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Servicio de bandejeo de pizzeria</span>
+                            <input type="checkbox" id="incPizzeria" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        
+                        <!-- Coctelería -->
+                        <div class="p-2.5 bg-zinc-50 border border-zinc-300 space-y-2">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="font-bold text-zinc-900">Servicio de Coctelería</span>
+                                <input type="checkbox" id="incCocteleria" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                            <div class="space-y-2 pt-1 border-t border-zinc-200">
+                                <select id="cocteleriaTipo" onchange="toggleCocteleriaQuantityInput(); updatePreview();" class="w-full bg-white border border-zinc-300 rounded-none px-2 py-1 text-zinc-900 font-medium">
+                                    <option value="Barra libre">Barra libre</option>
+                                    <option value="Tragos por persona">Tragos por persona</option>
+                                </select>
+                                <div id="cocteleriaCantContainer" class="hidden">
+                                    <label class="text-[10px] text-zinc-600 block mb-1 font-semibold">Cantidad de tragos por persona:</label>
+                                    <input type="text" id="cocteleriaCant" placeholder="Ej: 3 tragos por persona" value="3 tragos por persona" oninput="updatePreview()" class="w-full bg-white border border-zinc-300 rounded-none px-2 py-1 text-zinc-900">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal -->
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Personal de Barra</span>
+                            <input type="checkbox" id="incPersonalBarra" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Personal de Catering</span>
+                            <input type="checkbox" id="incPersonalCatering" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+
+                        <!-- Seguridad -->
+                        <div class="p-2.5 bg-zinc-50 border border-zinc-300 space-y-2">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="font-bold text-zinc-900">Seguridad</span>
+                                <input type="checkbox" id="incSeguridad" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                            <div>
+                                <input type="text" id="seguridadTexto" placeholder="Detalle (Ej: 2 personal de seguridad)" value="2 personal de seguridad" oninput="updatePreview()" class="w-full bg-white border border-zinc-300 rounded-none px-2 py-1 text-zinc-900 text-xs">
+                            </div>
+                        </div>
+
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Limpieza</span>
+                            <input type="checkbox" id="incLimpieza" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Host</span>
+                            <input type="checkbox" id="incHost" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">DJ</span>
+                            <input type="checkbox" id="incDj" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+                        <label class="flex items-center justify-between p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                            <span class="font-medium text-zinc-900">Guardarropas en el salón azul</span>
+                            <input type="checkbox" id="incGuardarropas" onchange="updatePreview()" class="custom-checkbox" checked>
+                        </label>
+
+                        <!-- CUSTOM INCLUDED SERVICES -->
+                        <div class="p-3 bg-zinc-50 border border-zinc-300 space-y-2 my-2">
+                            <span class="text-zinc-900 font-bold block text-xs uppercase tracking-wider"><i class="fa-solid fa-plus text-xs mr-1 text-zinc-600"></i> Agregar Servicio Adicional</span>
+                            <input type="text" id="customServiceTitle" placeholder="NOMBRE DEL SERVICIO ADICIONAL" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <button onclick="addCustomService()" class="w-full bg-zinc-800 hover:bg-black text-white font-bold py-1.5 px-3 text-xs transition uppercase tracking-wider">
+                                Insertar Servicio
+                            </button>
+                            <div id="quickCustomServicesList" class="space-y-1.5 pt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. TOTAL BUDGET & CURRENCY -->
+                <div class="space-y-3 pt-3 border-t border-zinc-300">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 4. Presupuesto Final y Moneda
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <div class="sm:col-span-2">
+                            <label class="text-zinc-700 mb-1 block font-semibold">Monto Total Presupuesto</label>
+                            <input type="text" id="inputAmount" value="1.850.000" oninput="formatAmountInput(this); updatePreview();" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-bold focus:outline-none focus:border-black">
+                        </div>
+                        <div>
+                            <label class="text-zinc-700 mb-1 block font-semibold">Moneda</label>
+                            <select id="inputCurrency" onchange="updatePreview()" class="w-full bg-zinc-50 border border-zinc-400 rounded-none px-3 py-2 text-zinc-900 font-bold focus:outline-none focus:border-black">
+                                <option value="ARS">ARS ($)</option>
+                                <option value="USD">USD (US$)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="flex items-center text-xs text-zinc-800 p-2 bg-zinc-50 border border-zinc-300 cursor-pointer">
+                        <input type="checkbox" id="inputPlusIva" onchange="updatePreview()" class="custom-checkbox mr-2" checked>
+                        <span class="font-medium">Agregar "+ IVA" al monto final</span>
+                    </label>
+                </div>
+
+                <!-- 5. COCKTAILS SELECTION -->
+                <div class="space-y-3 pt-3 border-t border-zinc-300">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 5. Menú Coctelería y Bebidas
+                    </label>
+                    
+                    <div class="space-y-2 text-xs">
+                        <span class="text-zinc-700 font-bold block uppercase tracking-wider text-[11px]">Tragos de Autor:</span>
+                        
+                        <div id="authorDrinksEditorContainer" class="space-y-2"></div>
+
+                        <div class="p-3 bg-zinc-50 border border-zinc-300 space-y-2 my-3">
+                            <span class="text-zinc-900 font-bold block text-xs uppercase tracking-wider"><i class="fa-solid fa-plus text-xs mr-1 text-zinc-600"></i> Agregar Trago Rápido</span>
+                            <input type="text" id="customDrinkTitle" placeholder="NOMBRE DEL TRAGO (En MAYÚSCULAS)" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <input type="text" id="customDrinkDesc" placeholder="Ingredientes / Descripción" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <button onclick="addQuickCustomDrink()" class="w-full bg-zinc-800 hover:bg-black text-white font-bold py-1.5 px-3 text-xs transition uppercase tracking-wider">
+                                Insertar Trago
+                            </button>
+                            <div id="quickCustomDrinksList" class="space-y-1.5 pt-1"></div>
+                        </div>
+
+                        <div class="pt-1">
+                            <span class="text-zinc-700 font-bold block uppercase tracking-wider text-[11px] mb-1">Clásicos:</span>
+                            <label class="flex items-center justify-between p-2.5 bg-zinc-50 border border-zinc-300 cursor-pointer hover:border-zinc-500">
+                                <div>
+                                    <div class="font-bold text-zinc-900 uppercase">Módulo Bebidas Clásicas</div>
+                                    <div class="text-[10px] text-zinc-600">Fernet Branca, Aperol Spritz, Campari Orange, Cynar Pomelo, Gin Tonic, Cerveza, Gaseosas Línea Coca, Agua</div>
+                                </div>
+                                <input type="checkbox" id="incClasicosGroup" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. GASTRONOMY MENU -->
+                <div class="space-y-3 pt-3 border-t border-zinc-300">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-zinc-900 inline-block"></span> 6. Menú Gastronomía
+                    </label>
+
+                    <div class="space-y-2 text-xs">
+                        <div id="foodItemsEditorContainer" class="space-y-2"></div>
+
+                        <div class="p-3 bg-zinc-50 border border-zinc-300 space-y-2 my-2">
+                            <span class="text-zinc-900 font-bold block text-xs uppercase tracking-wider"><i class="fa-solid fa-plus text-xs mr-1 text-zinc-600"></i> Agregar Plato a Gastronomía</span>
+                            <input type="text" id="customFoodTitle" placeholder="NOMBRE DEL PLATO" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <input type="text" id="customFoodBadge" placeholder="Etiqueta Opcional (Ej: Veggie/Sin Tacc)" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <input type="text" id="customFoodDesc" placeholder="Descripción / Ingredientes" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <button onclick="addQuickCustomFood('gastronomia')" class="w-full bg-zinc-800 hover:bg-black text-white font-bold py-1.5 px-3 text-xs transition uppercase tracking-wider">
+                                Insertar Plato
+                            </button>
+                            <div id="quickCustomFoodList" class="space-y-1.5 pt-1"></div>
+                        </div>
+
+                        <!-- La Guitarrita -->
+                        <div class="p-2.5 bg-zinc-50 border border-zinc-300 space-y-2">
+                            <span class="font-bold text-zinc-900 block uppercase tracking-wider text-[11px]">MENÚ "LA GUITARRITA":</span>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <div>
+                                    <div class="font-bold text-zinc-900">PIZZAS DE "LA GUITARRITA"</div>
+                                    <div class="text-[10px] text-zinc-600">Selección tradicional variada</div>
+                                </div>
+                                <input type="checkbox" id="incPizzasGuitarrita" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                            <label class="flex items-center text-zinc-800 text-[11px] pt-1.5 border-t border-zinc-200 cursor-pointer">
+                                <input type="checkbox" id="incFaina" onchange="updatePreview()" class="custom-checkbox mr-2" checked>
+                                <span>Incluye Fainá tradicional</span>
+                            </label>
+                            <label class="flex items-center justify-between text-zinc-800 pt-1 border-t border-zinc-200 cursor-pointer">
+                                <div>
+                                    <div class="font-bold text-zinc-900">EMPANADAS Y BASTONES DE MUZARELLA DE "LA GUITARRITA"</div>
+                                    <div class="text-[10px] text-zinc-600">Crujientes con salsa suave de la casa</div>
+                                </div>
+                                <input type="checkbox" id="incEmpanadasGuitarrita" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                        </div>
+
+                        <div class="p-3 bg-zinc-50 border border-zinc-300 space-y-2 my-2">
+                            <span class="text-zinc-900 font-bold block text-xs uppercase tracking-wider"><i class="fa-solid fa-plus text-xs mr-1 text-zinc-600"></i> Agregar Opción a La Guitarrita</span>
+                            <input type="text" id="customGuitarritaTitle" placeholder="NOMBRE DE LA OPCIÓN" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <input type="text" id="customGuitarritaDesc" placeholder="Descripción" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <button onclick="addQuickCustomFood('guitarrita')" class="w-full bg-zinc-800 hover:bg-black text-white font-bold py-1.5 px-3 text-xs transition uppercase tracking-wider">
+                                Insertar en La Guitarrita
+                            </button>
+                            <div id="quickCustomGuitarritaList" class="space-y-1.5 pt-1"></div>
+                        </div>
+
+                        <!-- Desserts -->
+                        <div class="p-2.5 bg-zinc-50 border border-zinc-300 space-y-2">
+                            <span class="font-bold text-zinc-900 block uppercase tracking-wider text-[11px]">POSTRES:</span>
+                            <label class="flex items-center justify-between text-zinc-900 cursor-pointer">
+                                <span class="font-bold">LEMON PIE</span>
+                                <input type="checkbox" id="incPostreLemonPie" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                            <label class="flex items-center justify-between text-zinc-900 cursor-pointer">
+                                <span class="font-bold">CHOCOTORTA TRADICIONAL</span>
+                                <input type="checkbox" id="incPostreChocotorta" onchange="updatePreview()" class="custom-checkbox" checked>
+                            </label>
+                        </div>
+
+                        <div class="p-3 bg-zinc-50 border border-zinc-300 space-y-2 my-2">
+                            <span class="text-zinc-900 font-bold block text-xs uppercase tracking-wider"><i class="fa-solid fa-plus text-xs mr-1 text-zinc-600"></i> Agregar Opción a Postres</span>
+                            <input type="text" id="customDessertTitle" placeholder="NOMBRE DEL POSTRE" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <input type="text" id="customDessertDesc" placeholder="Descripción / Detalles" class="w-full bg-white border border-zinc-300 px-2.5 py-1.5 text-zinc-900 text-xs rounded-none">
+                            <button onclick="addQuickCustomFood('postres')" class="w-full bg-zinc-800 hover:bg-black text-white font-bold py-1.5 px-3 text-xs transition uppercase tracking-wider">
+                                Insertar Postre
+                            </button>
+                            <div id="quickCustomDessertList" class="space-y-1.5 pt-1"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DOCUMENT PREVIEW COLUMN (RIGHT COLUMN / CANVAS PREVIEW) -->
+        <section class="lg:col-span-7 flex flex-col items-center">
+            <div class="w-full flex items-center justify-between mb-4 no-print max-w-[794px]">
+                <div class="flex items-center gap-2 text-xs text-zinc-800 font-mono font-bold">
+                    <span class="w-2.5 h-2.5 bg-black animate-pulse"></span>
+                    VISTA PREVIA
+                </div>
+            </div>
+
+            <!-- PDF Root Container - Clean A4 sheets -->
+            <div id="pdfContent" class="w-full max-w-[794px] flex flex-col items-center gap-6 bg-transparent">
+
+                <!-- PAGE 1: PORTADA (COVER PAGE) -->
+                <div class="pdf-page border border-zinc-800 rounded-none relative overflow-hidden flex flex-col justify-between">
+                    
+                    <div id="prevCoverBg" class="absolute inset-0 z-0 bg-black bg-cover bg-center opacity-40"></div>
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/40 to-black/90 z-0"></div>
+
+                    <div class="relative z-10 flex justify-end">
+                        <span class="text-[10px] font-mono tracking-widest text-zinc-400 uppercase">EST. 2016</span>
+                    </div>
+
+                    <!-- Horizontal transparent logo layout -->
+                    <div class="relative z-10 my-auto text-center flex items-center justify-center gap-5 pt-10">
+                        <div class="w-20 h-20 border-4 border-white rounded-full flex items-center justify-center font-gobold text-4xl tracking-tighter text-white bg-transparent flex-shrink-0 drop-shadow-md">
+                            I
+                        </div>
+                        <div class="text-left space-y-1 flex flex-col justify-center">
+                            <h1 class="font-gobold text-5xl sm:text-6xl tracking-wider text-white leading-none drop-shadow-md">
+                                LA CALLE <span class="text-white">2</span>
+                            </h1>
+                            <p class="font-gobold text-sm tracking-[0.2em] text-zinc-300 uppercase drop-shadow">BAR ~ EST. 2016</p>
+                        </div>
+                    </div>
+
+                    <!-- Page Footer -->
+                    <div class="relative z-10 pt-2 border-t border-zinc-800 text-center flex justify-center items-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest font-body">
+                        <span>LA CALLE BAR 2 - GURRUCHAGA 732, VILLA CRESPO</span>
+                    </div>
+                </div>
+
+                <!-- PAGE 2: PRESUPUESTO DETAILS -->
+                <div class="pdf-page border border-zinc-800 rounded-none relative flex flex-col justify-between">
+                    
+                    <div class="space-y-3">
+                        <div class="flex flex-col items-center justify-center pt-1 pb-3 border-b border-zinc-800">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center font-gobold text-xl tracking-tighter bg-transparent text-white">
+                                    I
+                                </div>
+                                <div class="text-left flex flex-col justify-center">
+                                    <h1 class="font-gobold text-2xl tracking-wider text-white leading-none">
+                                        LA CALLE <span class="text-white">2</span>
+                                    </h1>
+                                    <p class="font-gobold text-[8px] tracking-widest text-zinc-400 mt-0.5">BAR ~ EST. 2016</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 mb-1">
+                            <h2 class="font-gobold text-2xl tracking-wider text-white uppercase pb-1">
+                                PRESUPUESTO
+                            </h2>
+                        </div>
+
+                        <div class="my-2 bg-black border border-zinc-800 rounded-none p-3 space-y-2">
+                            <div class="grid grid-cols-2 gap-y-2 gap-x-6 text-xs">
+                                <div>
+                                    <span class="text-[9px] text-zinc-400 uppercase tracking-wider block font-semibold font-body">Cliente:</span>
+                                    <span id="prevClientName" class="font-bold text-white text-xs">Juan Pérez</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-zinc-400 uppercase tracking-wider block font-semibold font-body">Cantidad Pax:</span>
+                                    <span id="prevPax" class="font-semibold text-white text-xs">80 personas</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-zinc-400 uppercase tracking-wider block font-semibold font-body">Fecha del Evento:</span>
+                                    <span id="prevDate" class="font-semibold text-white text-xs">15/10/2026</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-zinc-400 uppercase tracking-wider block font-semibold font-body">Modalidad:</span>
+                                    <span id="prevModalidad" class="font-semibold text-white text-xs">Evento exclusivo</span>
+                                </div>
+                                <div class="col-span-2 pt-1.5 border-t border-zinc-900">
+                                    <span class="text-[9px] text-zinc-400 uppercase tracking-wider block font-semibold font-body">Dirección:</span>
+                                    <span id="prevAddress" class="text-white font-medium text-xs">Gurruchaga 732, Villa Crespo</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="my-2">
+                            <h3 class="font-gobold text-sm tracking-wider text-white border-b border-zinc-800 pb-1 mb-2 uppercase">
+                                EL SIGUIENTE PRESUPUESTO INCLUYE:
+                            </h3>
+
+                            <div class="bg-zinc-950 border border-zinc-800 p-2.5 rounded-none">
+                                <ul id="prevIncludedList" class="space-y-1 text-xs text-zinc-200"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mt-auto pt-2">
+                        <div class="p-2.5 bg-zinc-950 border border-zinc-700 text-center space-y-0.5">
+                            <span class="text-[9px] uppercase tracking-widest text-zinc-400 font-bold block font-body">PRESUPUESTO FINAL TOTAL</span>
+                            <div class="font-gobold text-2xl sm:text-3xl text-white tracking-wide flex items-center justify-center gap-2 flex-wrap" id="prevFinalPrice">
+                                $ 1.850.000 ARS + IVA
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-zinc-800 text-[8.5px] text-zinc-400 leading-tight space-y-0.5 font-mono">
+                            <p>• El presupuesto no incluye propinas, el cliente deberá traer en efectivo.</p>
+                            <p>• El presupuesto no incluye IVA.</p>
+                            <p>• El presupuesto tiene validez por 5 días.</p>
+                            <p>• La seña no es reembolsable.</p>
+                            <p>• Los presupuestos que son a más de 45 días se pasan en dólares al tipo de cambio blue.</p>
+                        </div>
+
+                        <!-- Page Footer -->
+                        <div class="pt-2 border-t border-zinc-800 text-center flex justify-center items-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest font-body">
+                            <span>LA CALLE BAR 2 - GURRUCHAGA 732, VILLA CRESPO</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAGE 3: COCKTAIL & BEVERAGE MENU -->
+                <div class="pdf-page border border-zinc-800 rounded-none relative flex flex-col justify-between">
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-2 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 border border-white rounded-full flex items-center justify-center font-gobold text-xs bg-transparent text-white">
+                                    I
+                                </div>
+                                <span class="font-gobold text-sm tracking-wider text-white">LA CALLE <span class="text-white">2</span></span>
+                            </div>
+                            <span class="font-gobold text-xs tracking-widest text-zinc-400 uppercase">MENÚ COCTELERÍA Y BEBIDAS</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="space-y-2">
+                                <h3 class="font-gobold text-base tracking-wider text-white uppercase">
+                                    TRAGOS DE AUTOR
+                                </h3>
+
+                                <div id="prevDrinksAuthorList" class="grid grid-cols-1 gap-2"></div>
+                            </div>
+
+                            <div id="prevClasicosContainer" class="space-y-1.5 pt-1">
+                                <h3 class="font-gobold text-base tracking-wider text-white uppercase">
+                                    CLÁSICOS & SIN ALCOHOL
+                                </h3>
+                                <p class="text-xs text-zinc-400 font-body leading-relaxed bg-black p-2.5 border border-zinc-800">
+                                    Fernet Branca • Aperol Spritz • Campari Orange • Cynar Pomelo • Gin Tonic • Cerveza • Gaseosas Línea Coca • Agua Mineral
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page Footer -->
+                    <div class="pt-2 border-t border-zinc-800 text-center flex justify-center items-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest font-body">
+                        <span>LA CALLE BAR 2 - GURRUCHAGA 732, VILLA CRESPO</span>
+                    </div>
+                </div>
+
+                <!-- PAGE 4: GASTRONOMY MENU -->
+                <div class="pdf-page border border-zinc-800 rounded-none relative flex flex-col justify-between">
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-2 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 border border-white rounded-full flex items-center justify-center font-gobold text-xs bg-transparent text-white">
+                                    I
+                                </div>
+                                <span class="font-gobold text-base tracking-wider text-white">LA CALLE <span class="text-white">2</span></span>
+                            </div>
+                            <span class="font-gobold text-xs tracking-widest text-zinc-400 uppercase">MENÚ GASTRONOMÍA</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="space-y-2">
+                                <h3 class="font-gobold text-base tracking-wider text-white border-b border-zinc-800 pb-1 uppercase">
+                                    MENÚ GASTRONOMÍA
+                                </h3>
+
+                                <div id="prevFoodList" class="grid grid-cols-1 gap-2"></div>
+                            </div>
+
+                            <div id="prevGuitarritaContainer" class="space-y-1.5 pt-1">
+                                <h3 class="font-gobold text-base tracking-wider text-white border-b border-zinc-800 pb-1 uppercase">
+                                    MENÚ "LA GUITARRITA"
+                                </h3>
+                                <div id="prevGuitarritaContent" class="grid grid-cols-1 gap-2"></div>
+                            </div>
+
+                            <div id="prevDessertsContainer" class="space-y-1.5 pt-1">
+                                <h3 class="font-gobold text-base tracking-wider text-white border-b border-zinc-800 pb-1 uppercase">
+                                    POSTRES
+                                </h3>
+                                <div id="prevDessertsContent" class="grid grid-cols-1 gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page Footer -->
+                    <div class="pt-2 border-t border-zinc-800 text-center flex justify-center items-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest font-body">
+                        <span>LA CALLE BAR 2 - GURRUCHAGA 732, VILLA CRESPO</span>
+                    </div>
+                </div>
+
+                <!-- PAGES FOR SELECTED SALONES -->
+                <div id="prevVenuesPagesContainer" class="w-full flex flex-col items-center gap-6 bg-transparent"></div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- DATABASE MANAGEMENT MODAL -->
+    <div id="databaseModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex justify-end">
+        <div class="w-full max-w-2xl bg-zinc-950 text-white border-l border-zinc-800 h-full overflow-y-auto p-6 space-y-6 text-xs modal-drawer shadow-2xl flex flex-col">
+            
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-database text-white text-lg"></i>
+                    <div>
+                        <h2 class="font-gobold text-xl text-white uppercase tracking-wider">GESTOR DE BASE DE DATOS</h2>
+                        <p class="text-[11px] text-zinc-400">Administrar tragos y platos por defecto</p>
+                    </div>
+                </div>
+                <button onclick="toggleDatabaseModal(false)" class="text-zinc-400 hover:text-white p-2 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-zinc-800">
+                <button onclick="switchDbTab('drinks')" id="tabBtnDrinks" class="px-4 py-2 border-b-2 border-white text-white font-bold uppercase tracking-wider">Tragos</button>
+                <button onclick="switchDbTab('food')" id="tabBtnFood" class="px-4 py-2 border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 uppercase tracking-wider">Gastronomía</button>
+            </div>
+
+            <!-- TAB 1: TRAGOS DATABASE -->
+            <div id="dbTabDrinks" class="space-y-4 flex-1">
+                <div class="bg-black p-4 border border-zinc-800 space-y-3">
+                    <h3 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus text-zinc-400"></i> Agregar Nuevo Trago a la Base
+                    </h3>
+                    <div class="space-y-2">
+                        <input type="text" id="dbDrinkName" placeholder="NOMBRE DEL TRAGO (Ej: NEGRONI ESPECIAL)" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-white font-bold uppercase">
+                        <input type="text" id="dbDrinkDesc" placeholder="Ingredientes / Descripción" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-white">
+                        <button onclick="addDbDrink()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2 px-4 transition uppercase tracking-wider text-xs">
+                            Guardar en Base de Datos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Tragos Guardados:</span>
+                    <div id="dbDrinksList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- TAB 2: FOOD DATABASE -->
+            <div id="dbTabFood" class="space-y-4 flex-1 hidden">
+                <div class="bg-black p-4 border border-zinc-800 space-y-3">
+                    <h3 class="font-bold text-white uppercase text-xs tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus text-zinc-400"></i> Agregar Nuevo Plato / Gastronomía
+                    </h3>
+                    <div class="space-y-2">
+                        <input type="text" id="dbFoodName" placeholder="NOMBRE DEL PLATO (Ej: BURRATA CON PESTO)" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-white font-bold uppercase">
+                        <input type="text" id="dbFoodBadge" placeholder="Etiqueta opcional (Ej: Veggie/sin tacc)" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-white">
+                        <input type="text" id="dbFoodDesc" placeholder="Ingredientes / Acompañamiento" class="w-full bg-zinc-900 border border-zinc-800 px-3 py-2 text-white">
+                        <button onclick="addDbFood()" class="w-full bg-white hover:bg-zinc-200 text-black font-bold py-2 px-4 transition uppercase tracking-wider text-xs">
+                            Guardar Plato
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="text-zinc-400 font-semibold block uppercase tracking-wider text-[11px]">Platos Guardados:</span>
+                    <div id="dbFoodList" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-zinc-800 flex justify-between items-center">
+                <button onclick="resetDefaultDatabase()" class="text-xs text-red-400 hover:text-red-300 font-mono flex items-center gap-1.5 uppercase">
+                    <i class="fa-solid fa-rotate-left"></i> Restablecer Valores Iniciales
+                </button>
+                <button onclick="toggleDatabaseModal(false)" class="bg-zinc-900 hover:bg-zinc-800 text-white font-bold py-2 px-6 border border-zinc-700 uppercase tracking-wider">
+                    Cerrar y Aplicar
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Sentence case converter helper
+        function toSentenceCase(str) {
+            if (!str) return '';
+            const lower = str.toLowerCase().trim();
+            return lower.replace(/(^\s*|[.!?]\s*)([a-z])/g, function(m, p1, p2) {
+                return p1 + p2.toUpperCase();
+            });
+        }
+
+        // Branch Selection Navigation
+        function returnToLanding() {
+            document.getElementById('landingScreen').classList.remove('hidden');
+        }
+
+        function openPasswordModal() {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('inputPassword').focus();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('inputPassword').value = '';
+        }
+
+        function verifyPassword() {
+            const pass = document.getElementById('inputPassword').value.trim();
+            if (pass.toLowerCase() === 'daiana') {
+                document.getElementById('passwordModal').classList.add('hidden');
+                document.getElementById('landingScreen').classList.add('hidden');
+                document.getElementById('inputPassword').value = '';
+                document.getElementById('passwordError').classList.add('hidden');
+            } else {
+                document.getElementById('passwordError').classList.remove('hidden');
+            }
+        }
+
+        function formatDots(str) {
+            if (!str) return '';
+            const clean = str.toString().replace(/\D/g, '');
+            if (!clean) return '';
+            return parseInt(clean, 10).toLocaleString('de-DE');
+        }
+
+        function formatAmountInput(input) {
+            const cursorPosition = input.selectionStart;
+            const originalLength = input.value.length;
+            const formatted = formatDots(input.value);
+            input.value = formatted;
+            
+            const newLength = formatted.length;
+            const diff = newLength - originalLength;
+            input.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+        }
+
+        // Default Initial Data with Local File Nomenclatures
+        const defaultVenueData = {
+            salon_azul: {
+                title: "SALÓN AZUL",
+                img1: "images/azul-1.png",
+                img2: "images/azul-2.png"
+            },
+            salon_verde: {
+                title: "SALÓN VERDE",
+                img1: "images/verde-1.png",
+                img2: "images/verde-2.png"
+            },
+            salon_negro: {
+                title: "SALÓN NEGRO",
+                img1: "images/negro-1.png",
+                img2: "images/negro-2.png"
+            },
+            salon_gris: {
+                title: "SALÓN GRIS",
+                img1: "images/gris-1.png",
+                img2: "images/gris-2.png"
+            },
+            patio: {
+                title: "PATIO AL AIRE LIBRE",
+                img1: "images/patio-1.png",
+                img2: "images/patio-2.png"
+            }
+        };
+
+        const defaultCoverPhotoUrl = "images/portada-1.png";
+
+        const defaultMasterDrinks = [
+            { id: "messi", name: "LO DE MESSI", desc: "Ginebra Llave + mate + sauco + lima + syrup simple", active: true },
+            { id: "royal", name: "ROYAL MILE", desc: "Ballantine's 7 + cordial de durazno + sidra", active: true },
+            { id: "baker", name: "BAKER STREET 221 B", desc: "Beefeater + triple sec + verjus + berries", active: true },
+            { id: "ruta", name: "RUTA 66", desc: "Tx Bourbon + miel ahumada + naranja + espuma miller", active: true }
+        ];
+
+        const defaultMasterFood = [
+            { id: "falafel", name: "FALAFEL", badge: "(Veggie/sin tacc)", desc: "Lactonesa de cilantro, menta", active: true },
+            { id: "bunuelos", name: "BUÑUELOS DE KALE Y CEBOLLA", badge: "(Veggie/sin tacc)", desc: "Emulsión de cilantro, maní", active: true },
+            { id: "croquetas", name: "CROQUETAS DE OSOBUCO", badge: "", desc: "Lactonesa de limón, menta", active: true },
+            { id: "tortilla", name: "MINI TORTILLA", badge: "", desc: "Papas confitadas, jamón crudo, alioli", active: true },
+            { id: "burger", name: "MINI BURGER", badge: "", desc: "Cheddar, panceta, lechuga, tomate y mil islas", active: true },
+            { id: "asado", name: "SANDWICH DE ASADO", badge: "", desc: "Asado braseado con mix de repollo", active: true }
+        ];
+
+        // Active State Variables
+        let venueData = {};
+        let coverPhotoUrl = "";
+        let masterDrinks = [];
+        let masterFood = [];
+        let quickCustomServices = [];
+        let quickCustomDrinks = [];
+        let quickCustomFood = [];
+        let quickCustomGuitarrita = [];
+        let quickCustomDesserts = [];
+
+        // LocalStorage Functions
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('lacalle2_masterDrinks', JSON.stringify(masterDrinks));
+                localStorage.setItem('lacalle2_masterFood', JSON.stringify(masterFood));
+            } catch (e) {
+                console.warn('LocalStorage error:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedDrinks = localStorage.getItem('lacalle2_masterDrinks');
+                const savedFood = localStorage.getItem('lacalle2_masterFood');
+
+                venueData = JSON.parse(JSON.stringify(defaultVenueData));
+                coverPhotoUrl = defaultCoverPhotoUrl;
+                masterDrinks = savedDrinks ? JSON.parse(savedDrinks) : JSON.parse(JSON.stringify(defaultMasterDrinks));
+                masterFood = savedFood ? JSON.parse(savedFood) : JSON.parse(JSON.stringify(defaultMasterFood));
+            } catch (e) {
+                venueData = JSON.parse(JSON.stringify(defaultVenueData));
+                coverPhotoUrl = defaultCoverPhotoUrl;
+                masterDrinks = JSON.parse(JSON.stringify(defaultMasterDrinks));
+                masterFood = JSON.parse(JSON.stringify(defaultMasterFood));
+            }
+        }
+
+        function resetDefaultDatabase() {
+            if (confirm("¿Estás seguro de restablecer la base de datos a sus valores iniciales?")) {
+                localStorage.removeItem('lacalle2_masterDrinks');
+                localStorage.removeItem('lacalle2_masterFood');
+                loadFromLocalStorage();
+                renderDbLists();
+                renderEditorLists();
+                updatePreview();
+            }
+        }
+
+        function toggleCocteleriaQuantityInput() {
+            const selectVal = document.getElementById('cocteleriaTipo').value;
+            const container = document.getElementById('cocteleriaCantContainer');
+            if (selectVal === 'Tragos por persona') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function addCustomService() {
+            const input = document.getElementById('customServiceTitle');
+            const title = input.value.trim();
+            if (!title) return;
+            quickCustomServices.push(title);
+            input.value = '';
+            renderQuickCustomServicesUI();
+            updatePreview();
+        }
+
+        function removeCustomService(index) {
+            quickCustomServices.splice(index, 1);
+            renderQuickCustomServicesUI();
+            updatePreview();
+        }
+
+        function renderQuickCustomServicesUI() {
+            const container = document.getElementById('quickCustomServicesList');
+            container.innerHTML = '';
+            quickCustomServices.forEach((service, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center text-xs bg-white p-2 border border-zinc-300';
+                item.innerHTML = `
+                    <span class="text-zinc-900 font-semibold">${service}</span>
+                    <button onclick="removeCustomService(${index})" class="text-red-600 hover:text-red-800 ml-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function addQuickCustomDrink() {
+            const titleInput = document.getElementById('customDrinkTitle');
+            const descInput = document.getElementById('customDrinkDesc');
+            
+            const title = titleInput.value.trim().toUpperCase();
+            const desc = toSentenceCase(descInput.value);
+
+            if (!title) return;
+
+            quickCustomDrinks.push({ title, desc });
+            titleInput.value = '';
+            descInput.value = '';
+
+            renderQuickCustomDrinksUI();
+            updatePreview();
+        }
+
+        function removeQuickCustomDrink(index) {
+            quickCustomDrinks.splice(index, 1);
+            renderQuickCustomDrinksUI();
+            updatePreview();
+        }
+
+        function renderQuickCustomDrinksUI() {
+            const container = document.getElementById('quickCustomDrinksList');
+            container.innerHTML = '';
+            quickCustomDrinks.forEach((drink, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center text-xs bg-white p-2 border border-zinc-300';
+                item.innerHTML = `
+                    <div>
+                        <strong class="text-zinc-900 font-bold uppercase">${drink.title}</strong>
+                        <p class="text-[10px] text-zinc-600">${drink.desc || '—'}</p>
+                    </div>
+                    <button onclick="removeQuickCustomDrink(${index})" class="text-red-600 hover:text-red-800 ml-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function addQuickCustomFood(type) {
+            if (type === 'gastronomia') {
+                const titleInput = document.getElementById('customFoodTitle');
+                const badgeInput = document.getElementById('customFoodBadge');
+                const descInput = document.getElementById('customFoodDesc');
+                
+                const title = titleInput.value.trim().toUpperCase();
+                const badge = badgeInput.value.trim();
+                const desc = toSentenceCase(descInput.value);
+
+                if (!title) return;
+
+                quickCustomFood.push({ title, badge, desc });
+                titleInput.value = ''; badgeInput.value = ''; descInput.value = '';
+                renderQuickCustomFoodUI('gastronomia');
+            } else if (type === 'guitarrita') {
+                const titleInput = document.getElementById('customGuitarritaTitle');
+                const descInput = document.getElementById('customGuitarritaDesc');
+                
+                const title = titleInput.value.trim().toUpperCase();
+                const desc = toSentenceCase(descInput.value);
+
+                if (!title) return;
+
+                quickCustomGuitarrita.push({ title, desc });
+                titleInput.value = ''; descInput.value = '';
+                renderQuickCustomFoodUI('guitarrita');
+            } else if (type === 'postres') {
+                const titleInput = document.getElementById('customDessertTitle');
+                const descInput = document.getElementById('customDessertDesc');
+                
+                const title = titleInput.value.trim().toUpperCase();
+                const desc = toSentenceCase(descInput.value);
+
+                if (!title) return;
+
+                quickCustomDesserts.push({ title, desc });
+                titleInput.value = ''; descInput.value = '';
+                renderQuickCustomFoodUI('postres');
+            }
+            updatePreview();
+        }
+
+        function removeQuickCustomFood(type, index) {
+            if (type === 'gastronomia') quickCustomFood.splice(index, 1);
+            if (type === 'guitarrita') quickCustomGuitarrita.splice(index, 1);
+            if (type === 'postres') quickCustomDesserts.splice(index, 1);
+            
+            renderQuickCustomFoodUI(type);
+            updatePreview();
+        }
+
+        function renderQuickCustomFoodUI(type) {
+            if (type === 'gastronomia') {
+                const container = document.getElementById('quickCustomFoodList');
+                container.innerHTML = '';
+                quickCustomFood.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center text-xs bg-white p-2 border border-zinc-300';
+                    div.innerHTML = `
+                        <div>
+                            <strong class="text-zinc-900 font-bold uppercase">${item.title} ${item.badge ? `<span class="text-[10px] text-zinc-600 font-normal">${item.badge}</span>` : ''}</strong>
+                            <p class="text-[10px] text-zinc-600">${item.desc || '—'}</p>
+                        </div>
+                        <button onclick="removeQuickCustomFood('gastronomia', ${index})" class="text-red-600 hover:text-red-800 ml-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            } else if (type === 'guitarrita') {
+                const container = document.getElementById('quickCustomGuitarritaList');
+                container.innerHTML = '';
+                quickCustomGuitarrita.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center text-xs bg-white p-2 border border-zinc-300';
+                    div.innerHTML = `
+                        <div>
+                            <strong class="text-zinc-900 font-bold uppercase">${item.title}</strong>
+                            <p class="text-[10px] text-zinc-600">${item.desc || '—'}</p>
+                        </div>
+                        <button onclick="removeQuickCustomFood('guitarrita', ${index})" class="text-red-600 hover:text-red-800 ml-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            } else if (type === 'postres') {
+                const container = document.getElementById('quickCustomDessertList');
+                container.innerHTML = '';
+                quickCustomDesserts.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex justify-between items-center text-xs bg-white p-2 border border-zinc-300';
+                    div.innerHTML = `
+                        <div>
+                            <strong class="text-zinc-900 font-bold uppercase">${item.title}</strong>
+                            <p class="text-[10px] text-zinc-600">${item.desc || '—'}</p>
+                        </div>
+                        <button onclick="removeQuickCustomFood('postres', ${index})" class="text-red-600 hover:text-red-800 ml-2">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        function renderEditorLists() {
+            const drinksContainer = document.getElementById('authorDrinksEditorContainer');
+            drinksContainer.innerHTML = '';
+            masterDrinks.forEach(drink => {
+                const label = document.createElement('label');
+                label.className = "flex items-center justify-between p-2.5 bg-zinc-50 border border-zinc-300 cursor-pointer hover:border-zinc-500 transition";
+                label.innerHTML = `
+                    <div>
+                        <div class="font-bold text-zinc-900 uppercase">${drink.name}</div>
+                        <div class="text-[10px] text-zinc-600">${toSentenceCase(drink.desc)}</div>
+                    </div>
+                    <input type="checkbox" value="${drink.id}" ${drink.active ? 'checked' : ''} onchange="updatePreview()" class="custom-checkbox drink-checkbox">
+                `;
+                drinksContainer.appendChild(label);
+            });
+
+            const foodContainer = document.getElementById('foodItemsEditorContainer');
+            foodContainer.innerHTML = '';
+            masterFood.forEach(food => {
+                const label = document.createElement('label');
+                label.className = "flex items-center justify-between p-2.5 bg-zinc-50 border border-zinc-300 cursor-pointer hover:border-zinc-500 transition";
+                label.innerHTML = `
+                    <div>
+                        <div class="font-bold text-zinc-900 uppercase">${food.name} ${food.badge ? `<span class="text-[10px] text-zinc-600 font-normal">${food.badge}</span>` : ''}</div>
+                        <div class="text-[10px] text-zinc-600">${toSentenceCase(food.desc)}</div>
+                    </div>
+                    <input type="checkbox" value="${food.id}" ${food.active ? 'checked' : ''} onchange="updatePreview()" class="custom-checkbox food-checkbox">
+                `;
+                foodContainer.appendChild(label);
+            });
+        }
+
+        function updateCoverPhoto(val) {
+            coverPhotoUrl = val.trim();
+            const bgDiv = document.getElementById('prevCoverBg');
+            if (coverPhotoUrl) {
+                bgDiv.style.backgroundImage = `url('${coverPhotoUrl}')`;
+            } else {
+                bgDiv.style.backgroundImage = 'none';
+            }
+        }
+
+        function updatePreview() {
+            updateCoverPhoto(coverPhotoUrl);
+
+            document.getElementById('prevClientName').innerText = document.getElementById('inputClientName').value || "—";
+            document.getElementById('prevPax').innerText = document.getElementById('inputPax').value || "—";
+            
+            const dateVal = document.getElementById('inputDate').value;
+            if (dateVal) {
+                const parts = dateVal.split('-');
+                document.getElementById('prevDate').innerText = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            } else {
+                document.getElementById('prevDate').innerText = "—";
+            }
+
+            document.getElementById('prevModalidad').innerText = document.getElementById('inputModalidad').value;
+            document.getElementById('prevAddress').innerText = "Gurruchaga 732, Villa Crespo";
+
+            const incList = document.getElementById('prevIncludedList');
+            incList.innerHTML = '';
+
+            const addIncItem = (label) => {
+                const li = document.createElement('li');
+                li.className = "flex items-start gap-2 py-1 border-b border-zinc-900 last:border-0";
+                li.innerHTML = `
+                    <i class="fa-solid fa-check text-white text-xs mt-0.5 flex-shrink-0"></i>
+                    <span class="font-medium text-zinc-200 text-xs leading-snug">${label}</span>
+                `;
+                incList.appendChild(li);
+            };
+
+            if (document.getElementById('incAlquiler').checked) addIncItem("Alquiler del espacio exclusivo");
+            if (document.getElementById('incFinger').checked) addIncItem("Servicio de bandejeo de finger food");
+            if (document.getElementById('incPizzeria').checked) addIncItem("Servicio de bandejeo de pizzeria");
+            
+            if (document.getElementById('incCocteleria').checked) {
+                const tipo = document.getElementById('cocteleriaTipo').value;
+                const cant = document.getElementById('cocteleriaCant').value;
+                if (tipo === 'Barra libre') {
+                    addIncItem(`Servicio de Coctelería (Barra libre)`);
+                } else {
+                    addIncItem(`Servicio de Coctelería (${cant ? cant : 'Cantidad de tragos por persona'})`);
+                }
+            }
+
+            if (document.getElementById('incPersonalBarra').checked) addIncItem("Personal de Barra");
+            if (document.getElementById('incPersonalCatering').checked) addIncItem("Personal de Catering");
+
+            if (document.getElementById('incSeguridad').checked) {
+                const segText = document.getElementById('seguridadTexto').value.trim();
+                addIncItem(`Seguridad ${segText ? `(${segText})` : ''}`);
+            }
+
+            if (document.getElementById('incLimpieza').checked) addIncItem("Limpieza");
+            if (document.getElementById('incHost').checked) addIncItem("Host");
+            if (document.getElementById('incDj').checked) addIncItem("DJ");
+            if (document.getElementById('incGuardarropas').checked) addIncItem("Guardarropas en el salón azul");
+
+            quickCustomServices.forEach(s => addIncItem(s));
+
+            const rawAmount = document.getElementById('inputAmount').value || "0";
+            const formattedAmount = formatDots(rawAmount) || rawAmount;
+            const curr = document.getElementById('inputCurrency').value;
+            const plusIva = document.getElementById('inputPlusIva').checked;
+            
+            const currencySymbol = curr === 'ARS' ? '$' : 'US$';
+            document.getElementById('prevFinalPrice').innerHTML = `${currencySymbol} ${formattedAmount} ${curr} ${plusIva ? ' + IVA' : ''}`;
+
+            const drinksPrevList = document.getElementById('prevDrinksAuthorList');
+            drinksPrevList.innerHTML = '';
+
+            const selectedDrinkBoxes = document.querySelectorAll('.drink-checkbox:checked');
+            selectedDrinkBoxes.forEach(box => {
+                const drinkObj = masterDrinks.find(d => d.id === box.value);
+                if (drinkObj) {
+                    const card = document.createElement('div');
+                    card.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    card.innerHTML = `
+                        <div class="font-bold text-white text-xs tracking-wide uppercase font-gobold">${drinkObj.name}</div>
+                        <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(drinkObj.desc)}</div>
+                    `;
+                    drinksPrevList.appendChild(card);
+                }
+            });
+
+            quickCustomDrinks.forEach(drink => {
+                const card = document.createElement('div');
+                card.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                card.innerHTML = `
+                    <div class="font-bold text-white text-xs tracking-wide uppercase font-gobold">${drink.title}</div>
+                    <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(drink.desc) || '—'}</div>
+                `;
+                drinksPrevList.appendChild(card);
+            });
+
+            const clasicosContainer = document.getElementById('prevClasicosContainer');
+            if (document.getElementById('incClasicosGroup').checked) {
+                clasicosContainer.classList.remove('hidden');
+            } else {
+                clasicosContainer.classList.add('hidden');
+            }
+
+            const foodPrevList = document.getElementById('prevFoodList');
+            foodPrevList.innerHTML = '';
+
+            const selectedFoodBoxes = document.querySelectorAll('.food-checkbox:checked');
+            selectedFoodBoxes.forEach(box => {
+                const foodObj = masterFood.find(f => f.id === box.value);
+                if (foodObj) {
+                    const card = document.createElement('div');
+                    card.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    card.innerHTML = `
+                        <div class="font-bold text-white text-xs tracking-wide flex items-center justify-between">
+                            <span class="uppercase font-gobold">${foodObj.name}</span>
+                            ${foodObj.badge ? `<span class="text-[10px] text-zinc-400 font-normal font-body">${foodObj.badge}</span>` : ''}
+                        </div>
+                        <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(foodObj.desc)}</div>
+                    `;
+                    foodPrevList.appendChild(card);
+                }
+            });
+
+            quickCustomFood.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                card.innerHTML = `
+                    <div class="font-bold text-white text-xs tracking-wide flex items-center justify-between">
+                        <span class="uppercase font-gobold">${item.title}</span>
+                        ${item.badge ? `<span class="text-[10px] text-zinc-400 font-normal font-body">${item.badge}</span>` : ''}
+                    </div>
+                    <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(item.desc) || '—'}</div>
+                `;
+                foodPrevList.appendChild(card);
+            });
+
+            const guitarritaContainer = document.getElementById('prevGuitarritaContainer');
+            const guitarritaContent = document.getElementById('prevGuitarritaContent');
+            guitarritaContent.innerHTML = '';
+
+            const incPizzas = document.getElementById('incPizzasGuitarrita').checked;
+            const incFaina = document.getElementById('incFaina').checked;
+            const incEmpanadas = document.getElementById('incEmpanadasGuitarrita').checked;
+
+            if (incPizzas || incEmpanadas || quickCustomGuitarrita.length > 0) {
+                guitarritaContainer.classList.remove('hidden');
+                
+                if (incPizzas) {
+                    const c1 = document.createElement('div');
+                    c1.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    c1.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">PIZZAS DE "LA GUITARRITA"</div>
+                        <div class="text-[11px] text-zinc-400 font-body">Selección tradicional variada ${incFaina ? '(Incluye fainá tradicional)' : ''}</div>
+                    `;
+                    guitarritaContent.appendChild(c1);
+                }
+
+                if (incEmpanadas) {
+                    const c2 = document.createElement('div');
+                    c2.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    c2.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">EMPANADAS Y BASTONES DE MUZARELLA DE "LA GUITARRITA"</div>
+                        <div class="text-[11px] text-zinc-400 font-body">Crujientes con salsa suave de la casa</div>
+                    `;
+                    guitarritaContent.appendChild(c2);
+                }
+
+                quickCustomGuitarrita.forEach(item => {
+                    const c = document.createElement('div');
+                    c.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    c.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">${item.title}</div>
+                        <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(item.desc) || '—'}</div>
+                    `;
+                    guitarritaContent.appendChild(c);
+                });
+            } else {
+                guitarritaContainer.classList.add('hidden');
+            }
+
+            const dessertsContainer = document.getElementById('prevDessertsContainer');
+            const dessertsContent = document.getElementById('prevDessertsContent');
+            dessertsContent.innerHTML = '';
+
+            const incLemon = document.getElementById('incPostreLemonPie').checked;
+            const incChoco = document.getElementById('incPostreChocotorta').checked;
+
+            if (incLemon || incChoco || quickCustomDesserts.length > 0) {
+                dessertsContainer.classList.remove('hidden');
+                
+                if (incLemon) {
+                    const d1 = document.createElement('div');
+                    d1.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    d1.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">LEMON PIE</div>
+                        <div class="text-[11px] text-zinc-400 font-body">Clásico de la casa</div>
+                    `;
+                    dessertsContent.appendChild(d1);
+                }
+
+                if (incChoco) {
+                    const d2 = document.createElement('div');
+                    d2.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    d2.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">CHOCOTORTA TRADICIONAL</div>
+                        <div class="text-[11px] text-zinc-400 font-body">Receta tradicional argentina</div>
+                    `;
+                    dessertsContent.appendChild(d2);
+                }
+
+                quickCustomDesserts.forEach(item => {
+                    const d = document.createElement('div');
+                    d.className = "p-2.5 bg-black border border-zinc-800 space-y-0.5";
+                    d.innerHTML = `
+                        <div class="font-bold text-white text-xs uppercase font-gobold">${item.title}</div>
+                        <div class="text-[11px] text-zinc-400 font-body">${toSentenceCase(item.desc) || '—'}</div>
+                    `;
+                    dessertsContent.appendChild(d);
+                });
+            } else {
+                dessertsContainer.classList.add('hidden');
+            }
+
+            renderVenuePages();
+        }
+
+        function renderVenuePages() {
+            const container = document.getElementById('prevVenuesPagesContainer');
+            container.innerHTML = '';
+
+            const checkedSalones = Array.from(document.querySelectorAll('.salon-checkbox:checked')).map(cb => cb.value);
+
+            checkedSalones.forEach((salonKey) => {
+                const venue = venueData[salonKey];
+                if (!venue) return;
+
+                const pageDiv = document.createElement('div');
+                pageDiv.className = "pdf-page border border-zinc-800 rounded-none relative bg-black flex flex-col justify-between";
+
+                const fallbackImg = "https://placehold.co/800x600/000000/ffffff?text=LA+CALLE+2";
+                let photosHTML = `
+                    <div class="my-auto space-y-4 w-full">
+                        <div class="relative w-full aspect-[16/10] border border-zinc-800 bg-black flex items-center justify-center overflow-hidden">
+                            ${venue.img1 ? `<img src="${venue.img1}" crossorigin="anonymous" alt="${venue.title} Foto 1" class="w-full h-full object-cover bg-black" onerror="this.onerror=null; this.src='${fallbackImg}';">` : `<span class="text-zinc-500 font-mono text-xs">FOTO 1 PENDIENTE</span>`}
+                        </div>
+                        <div class="relative w-full aspect-[16/10] border border-zinc-800 bg-black flex items-center justify-center overflow-hidden">
+                            ${venue.img2 ? `<img src="${venue.img2}" crossorigin="anonymous" alt="${venue.title} Foto 2" class="w-full h-full object-cover bg-black" onerror="this.onerror=null; this.src='${fallbackImg}';">` : `<span class="text-zinc-500 font-mono text-xs">FOTO 2 PENDIENTE</span>`}
+                        </div>
+                    </div>
+                `;
+
+                pageDiv.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-2 mb-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 border border-white rounded-full flex items-center justify-center font-gobold text-xs bg-transparent text-white">
+                                    I
+                                </div>
+                                <span class="font-gobold text-base tracking-wider text-white">LA CALLE <span class="text-white">2</span></span>
+                            </div>
+                        </div>
+
+                        <div class="text-left my-1 space-y-0.5 border-b border-zinc-800 pb-2">
+                            <h2 class="font-gobold text-2xl tracking-wider text-white uppercase">${venue.title}</h2>
+                        </div>
+                    </div>
+
+                    ${photosHTML}
+
+                    <!-- Page Footer -->
+                    <div class="pt-2 border-t border-zinc-800 text-center flex justify-center items-center text-[9px] font-semibold text-zinc-400 uppercase tracking-widest font-body">
+                        <span>LA CALLE BAR 2 - GURRUCHAGA 732, VILLA CRESPO</span>
+                    </div>
+                `;
+                container.appendChild(pageDiv);
+            });
+        }
+
+        function toggleDatabaseModal(show) {
+            const modal = document.getElementById('databaseModal');
+            if (show) {
+                modal.classList.remove('hidden');
+                renderDbLists();
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function switchDbTab(tab) {
+            document.getElementById('dbTabDrinks').classList.add('hidden');
+            document.getElementById('dbTabFood').classList.add('hidden');
+
+            document.getElementById('tabBtnDrinks').className = "px-4 py-2 border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 uppercase tracking-wider";
+            document.getElementById('tabBtnFood').className = "px-4 py-2 border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 uppercase tracking-wider";
+
+            if (tab === 'drinks') {
+                document.getElementById('dbTabDrinks').classList.remove('hidden');
+                document.getElementById('tabBtnDrinks').className = "px-4 py-2 border-b-2 border-white text-white font-bold uppercase tracking-wider";
+            } else if (tab === 'food') {
+                document.getElementById('dbTabFood').classList.remove('hidden');
+                document.getElementById('tabBtnFood').className = "px-4 py-2 border-b-2 border-white text-white font-bold uppercase tracking-wider";
+            }
+        }
+
+        function addDbDrink() {
+            const name = document.getElementById('dbDrinkName').value.trim().toUpperCase();
+            const desc = toSentenceCase(document.getElementById('dbDrinkDesc').value);
+            if (!name) return;
+
+            const id = 'custom_drink_' + Date.now();
+            masterDrinks.push({ id, name, desc, active: true });
+            saveToLocalStorage();
+            
+            document.getElementById('dbDrinkName').value = '';
+            document.getElementById('dbDrinkDesc').value = '';
+
+            renderDbLists();
+            renderEditorLists();
+            updatePreview();
+        }
+
+        function deleteDbDrink(id) {
+            masterDrinks = masterDrinks.filter(d => d.id !== id);
+            saveToLocalStorage();
+            renderDbLists();
+            renderEditorLists();
+            updatePreview();
+        }
+
+        function addDbFood() {
+            const name = document.getElementById('dbFoodName').value.trim().toUpperCase();
+            const badge = document.getElementById('dbFoodBadge').value.trim();
+            const desc = toSentenceCase(document.getElementById('dbFoodDesc').value);
+            if (!name) return;
+
+            const id = 'custom_food_' + Date.now();
+            masterFood.push({ id, name, badge, desc, active: true });
+            saveToLocalStorage();
+
+            document.getElementById('dbFoodName').value = '';
+            document.getElementById('dbFoodBadge').value = '';
+            document.getElementById('dbFoodDesc').value = '';
+
+            renderDbLists();
+            renderEditorLists();
+            updatePreview();
+        }
+
+        function deleteDbFood(id) {
+            masterFood = masterFood.filter(f => f.id !== id);
+            saveToLocalStorage();
+            renderDbLists();
+            renderEditorLists();
+            updatePreview();
+        }
+
+        function renderDbLists() {
+            const drinksList = document.getElementById('dbDrinksList');
+            drinksList.innerHTML = '';
+            masterDrinks.forEach(drink => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center p-2.5 bg-black border border-zinc-800";
+                div.innerHTML = `
+                    <div>
+                        <strong class="text-white font-bold uppercase block">${drink.name}</strong>
+                        <span class="text-[10px] text-zinc-400">${toSentenceCase(drink.desc) || 'Sin descripción'}</span>
+                    </div>
+                    <button onclick="deleteDbDrink('${drink.id}')" class="text-red-400 hover:text-red-300 p-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                drinksList.appendChild(div);
+            });
+
+            const foodList = document.getElementById('dbFoodList');
+            if (foodList) {
+                foodList.innerHTML = '';
+                masterFood.forEach(food => {
+                    const div = document.createElement('div');
+                    div.className = "flex justify-between items-center p-2.5 bg-black border border-zinc-800";
+                    div.innerHTML = `
+                        <div>
+                            <strong class="text-white font-bold uppercase block">${food.name} ${food.badge ? `<span class="text-zinc-400 text-[10px] font-normal">${food.badge}</span>` : ''}</strong>
+                            <span class="text-[10px] text-zinc-400">${toSentenceCase(food.desc) || 'Sin descripción'}</span>
+                        </div>
+                        <button onclick="deleteDbFood('${food.id}')" class="text-red-400 hover:text-red-300 p-1">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    `;
+                    foodList.appendChild(div);
+                });
+            }
+        }
+
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderEditorLists();
+            toggleCocteleriaQuantityInput();
+            updatePreview();
+            renderDbLists();
+        };
+    </script>
+</body>
+</html>
